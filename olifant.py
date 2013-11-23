@@ -1,3 +1,22 @@
+#!/usr/bin/env python     
+# -*- coding: utf-8 -*-    
+
+# olifant.py
+# Copyright (C) YYYY-YYYY Someone <someone@somewhere.xx>                      #### ← Aggiusta
+#
+# Olifant is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or               #### ← Controlla la versione
+# (at your option) any later version.
+#
+# Olifant is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.    If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import threading
 import time
@@ -12,7 +31,10 @@ folder_lid = "/proc/acpi/button/lid/" #lid
 
 audio_file = 'alarm.wav' #an audio file
 
-class Olifant(threading.Thread):
+###################################################################################################################
+###################################################################################################################
+###################################################################################################################
+class Olifant(object): # threading.Thread): ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 	"""
 	This class handles program logic
 	"""
@@ -75,7 +97,9 @@ class Olifant(threading.Thread):
 		-Cable is not plugged in (in this case thief just removes battery,
 			another sad scenario)
 		"""
-		threading.Thread.__init__(self)
+
+		##################################################################################################################		##################################################################################################################		##################################################################################################################
+		#threading.Thread.__init__(self) ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
 		if not self.__isLaptop():
 			raise OlifantException('This pc is not a notebook')
@@ -123,7 +147,7 @@ class Olifant(threading.Thread):
 		- password is None if you selected PASSWD MODE
 		- usbDrive is None if you selected USB MODE
 		- both previous if you selected STRONG MODE
-		"""		
+		"""
 		if not self.__checkLaptopStatus():
 			raise OlifantException("Your initial setup does not match with entered configuration \
 						(ie. you entered 'alarm with cable off' and your cable is already off)")
@@ -199,10 +223,6 @@ class Olifant(threading.Thread):
 		"""
 		return self.__wrong_tries
 
-	#destructor
-	def __del__(self):
-		self.__closeSystemFiles()
-	
 	
 	def _run_thread(self):
 		"""
@@ -247,33 +267,28 @@ class Olifant(threading.Thread):
 
 		for i in os.listdir(folder_powsupply):
 		    if "BAT" in i:
-		       file_batt = join(folder_powsupply, i, "present")
-		       if exists(file_batt):
-			  __f_batt = open(file_batt, "r")
-			  data_batt = __f_batt.read()
-			  __f_batt.seek(0) #rewinding
-			  __f_batt.close()
-			  return bool(int(data_batt))
+		       file_batt = os.path.join(folder_powsupply, i, "present")
+		       if os.path.exists(file_batt):
+			  with open(file_batt, "r") as f:
+			  	return bool(int(f.read()))
 		
 		return result
 	
 	#checks for AC cable plugged
 	def __isCablePlugged(self):
-		data_ac = self.__f_ac.read()
-		self.__f_ac.seek(0) #rewinding
-		return bool(int(data_ac))
+		with open(self.file_ac, "r") as f:
+			return bool(int(f.read()))
 	
 	#checks for closed lid
 	def __isLidOpen(self):
 		result = False
 
-		data_lid = self.__f_lid.read()
-		self.__f_lid.seek(0) #rewinding
-		state_lid = data_lid.splitlines()[0]
-		if "open" in state_lid:
-			result = True
+		with open(self.file_lid, "r") as f:
+			state_lid = f.readlines()[0]
+			if "open" in state_lid:
+				result = True
 
-		return result
+			return result
 
 	def __checkLaptopStatus(self):
 		"""
@@ -298,42 +313,29 @@ class Olifant(threading.Thread):
 		return result
 	
 
-	#opens system files
 	def __initSystemFiles(self):
-		#AC cable
-		DEV_powsupply = os.listdir(folder_powsupply)
-		acFolderFound = False
-		nFolder = len(DEV_batt)
-		i = 0
-		while not acFolderFound:
-		       if "AC" in DEV_powsupply[i]:
-		          file_ac = join(folder_powsupply, DEV_powsupply[i], "online")
-			  self.__f_ac = open(file_ac, "r")
-			  acFolderFound = True
-		       else:
-			  i = i + 1
+	    """
+	    Initializes the files needed later by the program.
+        """
 
-		#lid
-		DEV_lid = os.listdir(folder_lid)[0]
-		file_lid = os.path.join(folder_lid, DEV_lid, "state")
-		self.__f_lid = open(file_lid, "r")
+	    #AC cable
+	    DEV_powsupply = os.listdir(folder_powsupply)
+	    i = 0
+	    while True:
+            	if "AC" in DEV_powsupply[i]:
+                    self.file_ac = os.path.join(folder_powsupply, DEV_powsupply[i], "online")
+                    break
+            	i += 1
 
-	#closes system files
-	def __closeSystemFiles(self):
-		if self.__f_ac != None:
-			self.__f_ac.close()
-
-		if self.__f_lid != None:
-			self.__f_lid.close()
+	    #lid
+	    DEV_lid = os.listdir(folder_lid)[0]
+	    self.file_lid = os.path.join(folder_lid, DEV_lid, "state")
 
 
-
-#let's try it!
 if __name__ == "__main__":
 	time_to_sleep = 10
 	try:
 		ol = Olifant(Olifant.PASSWD_MODE, [Olifant.AC_ALARM])
-	
 		#devices = ol.getPendriveList()
 		ol.lock("phate")#usbDrive=devices[0]) #locking
 		print 'Olifant started, in next '+str(time_to_sleep)+' seconds try removing battery or AC cable or pressing power button (LOL)'
