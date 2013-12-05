@@ -277,8 +277,8 @@ class MyDialog2(wx.Dialog):
 	passwd = self.focus.GetValue()
 	if button == 'DEL':
 	   if len(passwd) > 0:
-		passwd = self.passwd[:-1]
-		focus.SetValue(passwd)
+		passwd = passwd[:-1]
+		self.focus.SetValue(passwd)
 	elif button == 'ENABLE':
 	   self.Close()
 	else:
